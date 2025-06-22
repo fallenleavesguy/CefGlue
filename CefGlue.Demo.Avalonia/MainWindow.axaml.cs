@@ -57,6 +57,7 @@ namespace Xilium.CefGlue.Demo.Avalonia
             closeButton.Click += delegate
             {
                 view.Dispose();
+                GC.Collect();
                 tabControl.Items.Remove(tab);
             };
             DockPanel.SetDock(closeButton, Dock.Right);

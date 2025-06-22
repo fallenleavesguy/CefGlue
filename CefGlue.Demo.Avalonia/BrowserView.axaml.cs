@@ -11,12 +11,14 @@ using System.Threading.Tasks;
 using Avalonia;
 using Xilium.CefGlue.Avalonia;
 using Xilium.CefGlue.Common.Handlers;
+using System.Diagnostics.Metrics;
 
 namespace Xilium.CefGlue.Demo.Avalonia
 {
     public partial class BrowserView : UserControl
     {
         private AvaloniaCefBrowser browser;
+        static int counter = 0;
 
         public BrowserView()
         {
@@ -24,7 +26,24 @@ namespace Xilium.CefGlue.Demo.Avalonia
 
             var browserWrapper = this.FindControl<Decorator>("browserWrapper");
 
-            browser = new AvaloniaCefBrowser();
+            //browser = new AvaloniaCefBrowser();
+            browser = new AvaloniaCefBrowser(() =>
+            {
+                // Get a suitable cache directory in user's AppData folder
+                string cachePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "CefglueDemo", "CefCache");
+
+                // Ensure the directory exists
+                Directory.CreateDirectory(cachePath);
+
+                return CefRequestContext.CreateContext(new CefRequestContextSettings
+                {
+                    PersistSessionCookies = true,
+                    PersistUserPreferences = true,
+                    CachePath = cachePath,
+                }, null);
+            });
             browser.Address = "https://www.google.com";
             browser.RegisterJavascriptObject(new BindingTestClass(), "boundBeforeLoadObject");
             browser.LoadStart += OnBrowserLoadStart;
@@ -42,7 +61,7 @@ namespace Xilium.CefGlue.Demo.Avalonia
                 {
                     if (task.GetType().IsGenericType)
                     {
-                        return ((dynamic) task).Result;
+                        return ((dynamic)task).Result;
                     }
 
                     return task;
@@ -92,7 +111,7 @@ namespace Xilium.CefGlue.Demo.Avalonia
 
             result.Write("; " + await browser.EvaluateJavaScript<bool>("return false"));
 
-            result.Write ("; " + await browser.EvaluateJavaScript<double>("return 1.5+1.5"));
+            result.Write("; " + await browser.EvaluateJavaScript<double>("return 1.5+1.5"));
 
             result.Write("; " + await browser.EvaluateJavaScript<double>("return 3+1.5"));
 
